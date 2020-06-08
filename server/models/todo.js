@@ -1,10 +1,9 @@
 var mongoose = require('mongoose');
 
-var Todo = mongoose.model('Todo', {
+const TodoSchema = new mongoose.Schema({
     text: {
         type: String,
-        require: true,
-        minlength: 1,
+        required: true,
         trim: true
     },
     completed: {
@@ -12,15 +11,20 @@ var Todo = mongoose.model('Todo', {
         default: false
     },
     completedAt: {
-        type: Number,
+        type: String,
         default: null
     },
-    _creator: {
+    owner: {
         type: mongoose.Schema.Types.ObjectId,
-        required: true
-    },
+        required: false,
+        ref: 'User'
+    }
+}, {
+    timestamps: true
 });
+
+var Todo = mongoose.model('Todo', TodoSchema);
 
 module.exports = {
     Todo
-}
+};

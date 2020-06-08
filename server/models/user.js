@@ -3,6 +3,7 @@ const validator = require('validator');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const _ = require('lodash');
+const Todo = require('./todo')
 
 var UserSchema = new mongoose.Schema({
     email:{
@@ -30,14 +31,16 @@ var UserSchema = new mongoose.Schema({
             type: String,
             required: true
         }
-    }]
+    }],
+}, {
+  timestamps: true
 });
 
 UserSchema.methods.toJSON = function (user) {
     var user = this;
     var userObject = user.toObject();
 
-    return _.pick(userObject, ['_id', 'email']);
+    return _.pick(userObject, ['_id', 'email', 'createdAt', 'updatedAt']);
 };
 
 UserSchema.methods.generateAuthToken = function () {
@@ -100,6 +103,7 @@ UserSchema.statics.findByCredentials = function (email, password) {
   });
 };
 
+//hashes the password before saving
 UserSchema.pre('save', function (next) {
   var user = this;
 
@@ -114,6 +118,15 @@ UserSchema.pre('save', function (next) {
     next();
   }
 });
+
+//deletes the tasks if the user is deleted
+// UserSchema.pre('remove', async function (next) {
+//   const user = this;
+
+//   await Todo.remove({  owner : user._id });
+
+//   next();
+// });
 
 var User = mongoose.model('User', UserSchema);
 

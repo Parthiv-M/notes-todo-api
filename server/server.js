@@ -156,31 +156,70 @@ app.post('/users/login', (req, res) => {                //--working
   });
 });
 
-app.use('/users/logout', authenticate, (req, res) => {
+app.patch('/users/me', authenticate, async (req, res) => {
+  const updates = Object.keys(req.body);
+  const allowedUpdates = ['email', 'password'];
+  const isValidOperation = updates.every((update) => allowedUpdates.includes(update));
+
+  if(!isValidOperation){
+    res.status().send({ error: 'Invalid Updation' });
+  }
+
+  try{
+    updates.forEach((update) => req.user[update] = req.body[update]);
+    await req.user.save()
+    res.send(req.user);
+  } catch(e) {
+    res.status(400).send();
+  }
+
+});
+
+app.post('/users/logout', authenticate, async (req, res) => {
+
+  //logs out of one particular session => api can be running on multiple devices and you can log out from one of them
   try {
-    console.log('here');
     req.user.tokens = req.user.tokens.filter((token) => {
-      console.log(token.token, 'and', req.token);
       return token.token !== req.token;
     });
-    console.log('here');
-    req.user.save();
-    console.log('here');
 
+    await req.user.save();
     res.send();
-    console.log('here');
+
   } catch(e) {
     res.status(500).send()
   }
 });
 
-app.delete('/users/me/token', authenticate, (req, res) => {
+app.post('/users/logoutAll', authenticate, async (req,res) => {
+  try{
+    req.user.tokens = [];
+    await req.user.save();
+    res.send();
+  } catch(e) {
+    res.status(500).send();
+  }
+});
 
-  req.user.removeToken(req.token).then(() => {
-    res.status(200).send();
-  }, () => {
-    res.status(400).send();
-  });
+app.delete('/users/me', authenticate, async (req, res) => {
+
+  try{
+    // const user = await User.findByIdAndDelete(req.user._id);  //gets user._id from authenticate 
+
+    // if(!user){
+    //   return res.status(404).send();
+    // }
+    res.send(req.user);
+    return req.user.remove();
+  } catch(e){
+    res.status(500).send()
+  };
+
+  // req.user.removeToken(req.token).then(() => {
+  //   res.status(200).send();
+  // }, () => {
+  //   res.status(400).send();
+  // });
   console.log('deleted');
 });
 
