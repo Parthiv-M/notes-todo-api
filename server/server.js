@@ -156,6 +156,24 @@ app.post('/users/login', (req, res) => {                //--working
   });
 });
 
+app.use('/users/logout', authenticate, (req, res) => {
+  try {
+    console.log('here');
+    req.user.tokens = req.user.tokens.filter((token) => {
+      console.log(token.token, 'and', req.token);
+      return token.token !== req.token;
+    });
+    console.log('here');
+    req.user.save();
+    console.log('here');
+
+    res.send();
+    console.log('here');
+  } catch(e) {
+    res.status(500).send()
+  }
+});
+
 app.delete('/users/me/token', authenticate, (req, res) => {
 
   req.user.removeToken(req.token).then(() => {
