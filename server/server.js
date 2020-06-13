@@ -18,7 +18,7 @@ app.use(bodyParser.json());
 app.post('/todos', authenticate, (req, res) => {
   var todo = new Todo({
     text: req.body.text,
-    _creator: req.user._id
+    _creator: req.user._id,
   });
   console.log('saving...');
 
@@ -29,14 +29,76 @@ app.post('/todos', authenticate, (req, res) => {
   });
 });
 
-app.get('/todos', authenticate, (req, res) => {
-  Todo.find({
-    _creator: req.user._id
-  }).then((todos) => {
-    res.send({todos});
-  }, (e) => {
-    res.status(400).send(e);
-  });
+//GET /todos?completed=true
+//GET /todos?limit=5&&skip=20
+
+app.get('/todos', authenticate, async (req, res) => {
+
+  //_creator field is defined in todoSchema
+
+  var myTodos = []; 
+  const match = {}
+  const sort = {}
+
+  if(req.query.sortBy) {
+    const parts = req.query.sortBy.split(':')
+    sort[parts[0]] = parts[1] === 'desc' ? -1 : 1   //assigns 1 or -1 depending on asc or desc
+  }
+
+  if(req.query.completed === 'all') {
+    Todo
+    .find()
+    .limit(parseInt(req.query.limit))   //pagination worked like this for me :)
+    .skip(parseInt(req.query.skip))
+    .sort(
+      sort
+    )    
+    .populate({
+      path: 'creator',         //populates the _creator field
+      match: {
+        _id: req.user._id       //checks if it is the current user
+      },      
+    })
+    .exec((err, doc) => {
+      doc.forEach((todo) => {
+        if(todo._creator !== null){
+          myTodos.push(todo)     
+        }
+      })
+      res.send(myTodos)
+    })  
+  }
+
+  else if(req.query.completed) {
+    match.completed = req.query.completed === 'true'
+
+   Todo
+    .find({ completed: match })    //checks if the todo is completed
+    .limit(parseInt(req.query.limit))   //pagination worked like this for me :)
+    .skip(parseInt(req.query.skip))
+    .sort(
+      sort
+    )
+    .populate({
+      path: '_creator',         //populates the _creator field
+      match: {
+        _id: req.user._id       //checks if it is the current user
+      }
+    })
+    .exec((err, doc) => {
+      doc.forEach((todo) => {
+        if(todo._creator !== null){
+          myTodos.push(todo)     
+          }
+        })
+      res.send(myTodos)
+    })
+  }
+  
+    //result : the _creator field is getting populated correctly
+    //in postman, GET /todos returns the required todos
+    //error : when the match property fails (todo is of other user), the _creator field is set to null
+    //temporary fix : checked if _creator is null or not and display corresponding todos  
 });
 
 app.get('/todos/:id', authenticate, (req, res) => {
@@ -227,4 +289,6 @@ app.listen(port, () => {
   console.log(`Started up at port ` + port);
 });
 
-module.exports = {app};
+module.exports = {
+  app
+};

@@ -4,7 +4,7 @@ const TodoSchema = new mongoose.Schema({
     text: {
         type: String,
         required: true,
-        trim: true
+        trim: true,
     },
     completed: {
         type: Boolean,
@@ -14,9 +14,9 @@ const TodoSchema = new mongoose.Schema({
         type: String,
         default: null
     },
-    owner: {
+    _creator: {
         type: mongoose.Schema.Types.ObjectId,
-        required: false,
+        required: true,
         ref: 'User'
     }
 }, {
