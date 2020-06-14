@@ -4,12 +4,13 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "mocha server/**/*.test.js",
-    "test-watch": "nodemon --exec 'npm test'"
+    "start": "node server/server.js",
+    "dev": "env-cmd -f ./server/config/dev.env nodemon server/server.js"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@sendgrid/mail": "^7.2.0",
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.19.0",
     "express": "^4.17.1",
@@ -22,6 +23,7 @@
     "validator": "^13.0.0"
   },
   "devDependencies": {
+    "env-cmd": "^10.1.0",
     "expect": "^26.0.1",
     "mocha": "^7.1.2",
     "nodemon": "^2.0.4",

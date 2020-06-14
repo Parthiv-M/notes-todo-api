@@ -1,4 +1,4 @@
-require('./config/config');
+//require('./config/config');
 
 const _ = require('lodash');
 const express = require('express');
@@ -6,6 +6,8 @@ const bodyParser = require('body-parser');
 const {ObjectID} = require('mongodb');
 const multer = require('multer')
 const sharp = require('sharp')
+const {sendWelcomeEmail} = require('./emails/account')
+const {sendGoodbyeEmail} = require('./emails/account')
 
 var {mongoose} = require('./db/mongoose');
 var {Todo} = require('./models/todo');
@@ -190,6 +192,7 @@ app.post('/users', (req, res) => {      //--working
   var user = new User(body);
 
   user.save().then(() => {
+    sendWelcomeEmail(user.email, user.name)
     return user.generateAuthToken();
   }).then((token) => {
     res.header('x-auth', token);
@@ -281,23 +284,12 @@ app.post('/users/logoutAll', authenticate, async (req,res) => {
 app.delete('/users/me', authenticate, async (req, res) => {
 
   try{
-    // const user = await User.findByIdAndDelete(req.user._id);  //gets user._id from authenticate 
-
-    // if(!user){
-    //   return res.status(404).send();
-    // }
-    res.send(req.user);
-    return req.user.remove();
-  } catch(e){
+    await req.user.remove()
+    sendGoodbyeEmail(req.user.email, req.user.name)
+    res.send(req.user)
+  } catch(e) {
     res.status(500).send()
-  };
-
-  // req.user.removeToken(req.token).then(() => {
-  //   res.status(200).send();
-  // }, () => {
-  //   res.status(400).send();
-  // });
-  console.log('deleted');
+  }
 }); 
 
 app.post('/users/me/avatar', authenticate, upload.single('avatar'), async (req, res) => {
