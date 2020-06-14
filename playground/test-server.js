@@ -1,6 +1,20 @@
 var mongoose = require('mongoose');
 var express = require('express');
 
+const multer = require('multer')
+const upload = multer({
+    dest: 'images',
+    limits: {
+        fileSize: 1000000
+    },
+    fileFilter(req, file, cb) {
+        if(!file.originalname.match(/\.(doc|docx)$/)) {
+            return cb(new Error('Please upload a PDF'))
+        }
+        cb(undefined, true)
+    }
+})
+
 const person = new mongoose.Schema({
     name: {
         type: String,
@@ -74,9 +88,6 @@ app.get('/test/person', (req, res) => {
       .find()
       .populate({
           path: 'jobHolder',
-        //   match: {
-        //       age: '31'
-        //   }
       })
       .exec((err, doc) => {
           res.send(doc)
@@ -85,16 +96,18 @@ app.get('/test/person', (req, res) => {
 
 app.get('/test/job', (req, res) => {
     console.log('works too');
+ 
+})
 
-    // Job
-    //   .find()
-    //   .populate({
-    //       path: 'person',
-    //       match: {
+const errorMiddleware = (req, res, next) => {
+    throw new Error('From my middleware')
+}
 
-    //       }
-    //   })
-    //   .exec((err, doc) => res.send(doc));
+app.post('/upload', errorMiddleware, (req, res) => {
+    
+    res.send()
+}, (err, req, res, next) => {
+    res.status(400).send({error: err.message})
 })
 
 app.listen(3000, () => {

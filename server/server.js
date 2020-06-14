@@ -4,6 +4,8 @@ const _ = require('lodash');
 const express = require('express');
 const bodyParser = require('body-parser');
 const {ObjectID} = require('mongodb');
+const multer = require('multer')
+const sharp = require('sharp')
 
 var {mongoose} = require('./db/mongoose');
 var {Todo} = require('./models/todo');
@@ -12,6 +14,19 @@ var {authenticate} = require('./middleware/authenticate');
 
 var app = express();
 const port = process.env.PORT;
+
+const upload = multer({         //instance of multer is created with following speciofications
+  // dest: 'avatars',           since we need the image saved in the user profile and not the file system
+  limits: {
+    fileSize: 1000000
+  },
+  fileFilter(req, file, cb) {
+    if(!file.originalname.match(/\.(jpg|png|jpeg)$/)){       //checks for file ending using regular expressions
+      return cb(new Error('Please check the file type (jpg, jpeg, png) and file size (less than 1 MB)'))
+    }
+    cb(undefined, true)
+  }
+})
 
 app.use(bodyParser.json());
 
@@ -283,7 +298,39 @@ app.delete('/users/me', authenticate, async (req, res) => {
   //   res.status(400).send();
   // });
   console.log('deleted');
-});
+}); 
+
+app.post('/users/me/avatar', authenticate, upload.single('avatar'), async (req, res) => {
+  
+  const buffer = await sharp(req.file.buffer).resize({height: 250, width: 250}).png().toBuffer()    //converts to required size and required format
+  req.user.avatar = buffer
+  await req.user.save()
+  res.send()
+}, (error, req, res, next) => {
+  res.status(404).send({ error: error.message})
+})
+
+app.delete('/users/me/avatar', authenticate, async(req, res) => {
+  req.user.avatar = undefined
+  await req.user.save()
+  res.send()
+})
+
+app.get('/users/:id/avatar', async (req, res) => {
+  try{
+    const user = await User.findById(req.params.id)
+
+    if(!user || !user.avatar) {
+      throw new Error()
+    }
+
+    res.set('Content-Type', 'image/png')
+    res.send(user.avatar)
+
+  } catch(e) {
+    res.status(404).send()
+  }
+})
 
 app.listen(port, () => {
   console.log(`Started up at port ` + port);
