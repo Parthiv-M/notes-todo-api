@@ -1,5 +1,3 @@
-//require('./config/config');
-
 const _ = require('lodash');
 const express = require('express');
 const bodyParser = require('body-parser');
@@ -17,8 +15,8 @@ var {authenticate} = require('./middleware/authenticate');
 var app = express();
 const port = process.env.PORT;
 
-const upload = multer({         //instance of multer is created with following speciofications
-  // dest: 'avatars',           since we need the image saved in the user profile and not the file system
+const upload = multer({         // instance of multer is created with following speciofications
+                                // since we need the image saved in the user profile and not the file system
   limits: {
     fileSize: 1000000
   },
@@ -49,31 +47,29 @@ app.post('/todos', authenticate, (req, res) => {
 //GET /todos?completed=true
 //GET /todos?limit=5&&skip=20
 
+// fetches all todos
 app.get('/todos', authenticate, async (req, res) => {
-
-  //_creator field is defined in todoSchema
-
   var myTodos = []; 
   const match = {}
   const sort = {}
 
   if(req.query.sortBy) {
     const parts = req.query.sortBy.split(':')
-    sort[parts[0]] = parts[1] === 'desc' ? -1 : 1   //assigns 1 or -1 depending on asc or desc
+    sort[parts[0]] = parts[1] === 'desc' ? -1 : 1   // assigns 1 or -1 depending on asc or desc
   }
 
   if(req.query.completed === 'all') {
     Todo
     .find()
-    .limit(parseInt(req.query.limit))   //pagination worked like this for me :)
+    .limit(parseInt(req.query.limit))   // pagination worked like this for me :)
     .skip(parseInt(req.query.skip))
     .sort(
       sort
     )    
     .populate({
-      path: 'creator',         //populates the _creator field
+      path: 'creator',         // populates the _creator field
       match: {
-        _id: req.user._id       //checks if it is the current user
+        _id: req.user._id       // checks if it is the current user
       },      
     })
     .exec((err, doc) => {
@@ -90,16 +86,16 @@ app.get('/todos', authenticate, async (req, res) => {
     match.completed = req.query.completed === 'true'
 
    Todo
-    .find({ completed: match })    //checks if the todo is completed
-    .limit(parseInt(req.query.limit))   //pagination worked like this for me :)
+    .find({ completed: match })    // checks if the todo is completed
+    .limit(parseInt(req.query.limit))   // pagination worked like this for me 
     .skip(parseInt(req.query.skip))
     .sort(
       sort
     )
     .populate({
-      path: '_creator',         //populates the _creator field
+      path: '_creator',         // populates the _creator field
       match: {
-        _id: req.user._id       //checks if it is the current user
+        _id: req.user._id       // checks if it is the current user
       }
     })
     .exec((err, doc) => {
@@ -112,12 +108,13 @@ app.get('/todos', authenticate, async (req, res) => {
     })
   }
   
-    //result : the _creator field is getting populated correctly
-    //in postman, GET /todos returns the required todos
-    //error : when the match property fails (todo is of other user), the _creator field is set to null
-    //temporary fix : checked if _creator is null or not and display corresponding todos  
+    // result : the _creator field is getting populated correctly
+    // in postman, GET /todos returns the required todos
+    // error : when the match property fails (todo is of other user), the _creator field is set to null
+    // temporary fix : checked if _creator is null or not and display corresponding todos  
 });
 
+// fetches todos by ID
 app.get('/todos/:id', authenticate, (req, res) => {
   var id = req.params.id;
 
@@ -139,6 +136,7 @@ app.get('/todos/:id', authenticate, (req, res) => {
   });
 });
 
+// deletes todo by ID
 app.delete('/todos/:id', authenticate, (req, res) => {
   var id = req.params.id;
 
@@ -160,6 +158,7 @@ app.delete('/todos/:id', authenticate, (req, res) => {
   });
 });
 
+// updates a todo by ID
 app.patch('/todos/:id', authenticate, (req, res) => {
   var id = req.params.id;
   var body = _.pick(req.body, ['text', 'completed']);
@@ -186,8 +185,8 @@ app.patch('/todos/:id', authenticate, (req, res) => {
   })
 });
 
-// POST /users
-app.post('/users', (req, res) => {      //--working
+// creates a new user
+app.post('/users', (req, res) => {      
   var body = _.pick(req.body, ['email', 'password']);
   var user = new User(body);
 
@@ -203,7 +202,8 @@ app.post('/users', (req, res) => {      //--working
   })
 });
 
-app.get('/users', (req, res) => {        //--working
+// fetches all users
+app.get('/users', (req, res) => {        
     console.log('in get /users');
     User.findOne({
         email: "parthivmenon.dev@gmail.com"
@@ -214,11 +214,13 @@ app.get('/users', (req, res) => {        //--working
     }).catch((e) => console.log(e));
 });
 
+// fetches user's profile
 app.get('/users/me', authenticate, (req, res) => {
     console.log('in users/me');
     res.send(req.user);
 });
 
+// logs a user in
 app.post('/users/login', (req, res) => {                //--working
   var body = _.pick(req.body, ['email', 'password']);
 
@@ -236,6 +238,7 @@ app.post('/users/login', (req, res) => {                //--working
   });
 });
 
+// updates user profile details
 app.patch('/users/me', authenticate, async (req, res) => {
   const updates = Object.keys(req.body);
   const allowedUpdates = ['email', 'password'];
@@ -252,9 +255,9 @@ app.patch('/users/me', authenticate, async (req, res) => {
   } catch(e) {
     res.status(400).send();
   }
-
 });
 
+// logs a user out
 app.post('/users/logout', authenticate, async (req, res) => {
 
   //logs out of one particular session => api can be running on multiple devices and you can log out from one of them
@@ -271,6 +274,7 @@ app.post('/users/logout', authenticate, async (req, res) => {
   }
 });
 
+// logs user out from all sessions
 app.post('/users/logoutAll', authenticate, async (req,res) => {
   try{
     req.user.tokens = [];
@@ -281,8 +285,8 @@ app.post('/users/logoutAll', authenticate, async (req,res) => {
   }
 });
 
+// deletes a user profile, only for self
 app.delete('/users/me', authenticate, async (req, res) => {
-
   try{
     await req.user.remove()
     sendGoodbyeEmail(req.user.email, req.user.name)
@@ -292,8 +296,8 @@ app.delete('/users/me', authenticate, async (req, res) => {
   }
 }); 
 
+// creates a user avatar
 app.post('/users/me/avatar', authenticate, upload.single('avatar'), async (req, res) => {
-  
   const buffer = await sharp(req.file.buffer).resize({height: 250, width: 250}).png().toBuffer()    //converts to required size and required format
   req.user.avatar = buffer
   await req.user.save()
@@ -302,12 +306,14 @@ app.post('/users/me/avatar', authenticate, upload.single('avatar'), async (req, 
   res.status(404).send({ error: error.message})
 })
 
+// deletes user avatar
 app.delete('/users/me/avatar', authenticate, async(req, res) => {
   req.user.avatar = undefined
   await req.user.save()
   res.send()
 })
 
+// fetches user avatar by ID
 app.get('/users/:id/avatar', async (req, res) => {
   try{
     const user = await User.findById(req.params.id)
@@ -324,6 +330,7 @@ app.get('/users/:id/avatar', async (req, res) => {
   }
 })
 
+// listen to the app on $port
 app.listen(port, () => {
   console.log(`Started up at port ` + port);
 });
